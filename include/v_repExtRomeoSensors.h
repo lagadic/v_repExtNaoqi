@@ -9,244 +9,244 @@
 #include <alproxies/alvideodeviceproxy.h>
 namespace v_repRomeoSensors{
 
-    /// \class Sensor class
-    /// \brief This class represent a generic sensor. It includes both reference to Vrep simulated sensor and Aldebaran libraries
-    class Sensor{
-        public:
+/// \class Sensor class
+/// \brief This class represent a generic sensor. It includes both reference to Vrep simulated sensor and Aldebaran libraries
+class Sensor{
+public:
 
-            // VARIABLES
+    // VARIABLES
 
-            /// \brief Name of the sensor
-            std::string sensorName;
-            /// \brief Handle to Vrep
-            simInt sensorHandle;
-            /// \brief Enable or disable the sensor
-            bool sensorEnable;
-            /// \brief Update step time
-            float updateStep;
-            /// \brief lastUpdateTime. It is useful to set a frequency update
-            float lastUpdateTime;
+    /// \brief Name of the sensor
+    std::string sensorName;
+    /// \brief Handle to Vrep
+    simInt sensorHandle;
+    /// \brief Enable or disable the sensor
+    bool sensorEnable;
+    /// \brief Update step time
+    float updateStep;
+    /// \brief lastUpdateTime. It is useful to set a frequency update
+    float lastUpdateTime;
 
-            /// \brief (Optional) Names and handles to children of the sensors
-            std::vector< std::pair<std::string, simInt> > sensorChildrens;
+    /// \brief (Optional) Names and handles to children of the sensors
+    std::vector< std::pair<std::string, simInt> > sensorChildrens;
 
-            // METHODS
+    // METHODS
 
-            /// \brief Default constructor
-            Sensor();
+    /// \brief Default constructor
+    Sensor();
 
-            /// \brief Constructor specifying the name of the handle to be searched into Vrep world
-            /// \param[in].&name Name to be searched into Vrep world (if no other option it searches
-            /// exactly the name of the first input
-            /// \param[in].handle (Optional) Handle to the root where the searching process starts
-            Sensor(const std::string& name, simInt handle = -1);
+    /// \brief Constructor specifying the name of the handle to be searched into Vrep world
+    /// \param[in].&name Name to be searched into Vrep world (if no other option it searches
+    /// exactly the name of the first input
+    /// \param[in].handle (Optional) Handle to the root where the searching process starts
+    Sensor(const std::string& name, simInt handle = -1);
 
-            /// \brief Constructor specifying the name of the handle to be searched into Vrep world
-            /// \param[in].&handle Handle to Vrep
-            Sensor(const simInt& handle);
+    /// \brief Constructor specifying the name of the handle to be searched into Vrep world
+    /// \param[in].&handle Handle to Vrep
+    Sensor(const simInt& handle);
 
-            /// \brief Constructor specifying the name of the handle to be searched into Vrep world
-            /// \param[in].&handle Handle to Vrep
-            /// \param[in].&namesVrep List of names of Vrep tree
-            Sensor(const simInt& name, std::vector< std::pair<std::string, simInt> > &namesVrep);
+    /// \brief Constructor specifying the name of the handle to be searched into Vrep world
+    /// \param[in].&handle Handle to Vrep
+    /// \param[in].&namesVrep List of names of Vrep tree
+    Sensor(const simInt& name, std::vector< std::pair<std::string, simInt> > &namesVrep);
 
-            /// \brief Copy constructor
-            Sensor(const Sensor& A);
+    /// \brief Copy constructor
+    Sensor(const Sensor& A);
 
-            /// \brief Assignment operator
-            Sensor& operator=(const Sensor& A);
+    /// \brief Assignment operator
+    Sensor& operator=(const Sensor& A);
 
-            /// \brief Method that, given the ID root from Vrep, creates a vector of pair<name,id>
-            /// of the entire tree associated with the root including names and ids
-            /// \param[in].&objHandle Handle to Vrep root
-            /// \param[out].&out pair<name,id> of the children having as root objHandle
-            void findVrepTree(simInt &objHandle, std::vector< std::pair< std::string,simInt> > &out);
+    /// \brief Method that, given the ID root from Vrep, creates a vector of pair<name,id>
+    /// of the entire tree associated with the root including names and ids
+    /// \param[in].&objHandle Handle to Vrep root
+    /// \param[out].&out pair<name,id> of the children having as root objHandle
+    void findVrepTree(simInt &objHandle, std::vector< std::pair< std::string,simInt> > &out);
 
-            /// \brief Method that, given the ID root from Vrep, creates a vector of id (handles)
-            /// of the entire tree associated with the root including names and ids
-            /// \param[in].&objHandle Handle to Vrep root
-            /// \param[out].&out ids (handles) of the children having as root objHandle
-            void findVrepTree(simInt &objHandle, std::vector< simInt > &out);
+    /// \brief Method that, given the ID root from Vrep, creates a vector of id (handles)
+    /// of the entire tree associated with the root including names and ids
+    /// \param[in].&objHandle Handle to Vrep root
+    /// \param[out].&out ids (handles) of the children having as root objHandle
+    void findVrepTree(simInt &objHandle, std::vector< simInt > &out);
 
-            /// \brief Method that checks first if it exists an object in Vrep named name (first input)
-            /// In negative case, it uses the handle (second input) as root for searching an object with
-            /// name at the least equal or greater than name (first input)
-            /// \param[in].&name Name to be searched into Vrep world
-            /// \param[in].handle (Optional) Root where the searching process starts
-            void searchSensorHandle(const std::string &name, simInt handle = -1);
+    /// \brief Method that checks first if it exists an object in Vrep named name (first input)
+    /// In negative case, it uses the handle (second input) as root for searching an object with
+    /// name at the least equal or greater than name (first input)
+    /// \param[in].&name Name to be searched into Vrep world
+    /// \param[in].handle (Optional) Root where the searching process starts
+    void searchSensorHandle(const std::string &name, simInt handle = -1);
 
-            /// \brief Update function
-            virtual void updateSensor() = 0;
+    /// \brief Update function
+    virtual void updateSensor() = 0;
 
-            /// \brief Update function with a given rate frequency
-            virtual void updateSensorRate();
+    /// \brief Update function with a given rate frequency
+    virtual void updateSensorRate();
 
-            /// \brief Default destructor
-            ~Sensor();
-    };
+    /// \brief Default destructor
+    ~Sensor();
+};
 
-    class InertialSensor : public Sensor{
-        private:
-            /// \brief It is a vector composed by 7 values: orientation around x-axis and y-axis (in radians),
-            /// accelerations along x-axis x, y-axis and z-axis (in meter per second
-            /// squared),  and rotational speed around x-axis and y-axis (in radian per second)
-            std::vector<float> IMUdata;
+class InertialSensor : public Sensor{
+private:
+    /// \brief It is a vector composed by 7 values: orientation around x-axis and y-axis (in radians),
+    /// accelerations along x-axis x, y-axis and z-axis (in meter per second
+    /// squared),  and rotational speed around x-axis and y-axis (in radian per second)
+    std::vector<float> IMUdata;
 
-            /// \brief Mass of the object
-            float mass;
+    /// \brief Mass of the object
+    float mass;
 
-            /// \brief Handle to the mass object (the respondable object in Vrep)
-            simInt massHandle;
+    /// \brief Handle to the mass object (the respondable object in Vrep)
+    simInt massHandle;
 
-            /// \brief Handle to the force sensor
-            simInt forceHandle;
+    /// \brief Handle to the force sensor
+    simInt forceHandle;
 
-            /// \brief Pointer to simulatorSDK structure
-            const Sim::InertialSensor* simSDKPt;
+    /// \brief Pointer to simulatorSDK structure
+    const Sim::InertialSensor* simSDKPt;
 
-            /// \brief Temporary structure for storing the roto-translation matrix (needed to
-            /// compute the angular velocity in body frame)
-            float tempOri[12];
+    /// \brief Temporary structure for storing the roto-translation matrix (needed to
+    /// compute the angular velocity in body frame)
+    float tempOri[12];
 
-        public:
-            /// \brief Empty constructor
-            InertialSensor() : Sensor() {}
+public:
+    /// \brief Empty constructor
+    InertialSensor() : Sensor() {}
 
-            /// \brief Constructor specifying the name of the handle to be searched into Vrep world
-            /// \param[in].&name Name to bea searched into Vrep world
-            InertialSensor(const std::string& name);
+    /// \brief Constructor specifying the name of the handle to be searched into Vrep world
+    /// \param[in].&name Name to bea searched into Vrep world
+    InertialSensor(const std::string& name);
 
-            /// \brief Constructor specifying the name of the handle to be searched into Vrep world
-            /// \param[in].&name Name to bea searched into Vrep world
-            InertialSensor(const std::string& name, simInt handle, const Sim::InertialSensor* simSDKInSensPt = NULL);
+    /// \brief Constructor specifying the name of the handle to be searched into Vrep world
+    /// \param[in].&name Name to bea searched into Vrep world
+    InertialSensor(const std::string& name, simInt handle, const Sim::InertialSensor* simSDKInSensPt = NULL);
 
-            /// \brief Get the inertial data
-            std::vector<float> getInertialSensorData() const;
+    /// \brief Get the inertial data
+    std::vector<float> getInertialSensorData() const;
 
-            /// \brief Get the inertial data pointer
-            std::vector<float>* getInertialSensorDataPtr();
+    /// \brief Get the inertial data pointer
+    std::vector<float>* getInertialSensorDataPtr();
 
-            /// \brief Get the inertial data
-            void setInertialSensorData(std::vector<float> &data);
+    /// \brief Get the inertial data
+    void setInertialSensorData(std::vector<float> &data);
 
-            /// \brief Get the mass of the sensor
-            /// \return Current mass of the object
-            float getMass() const;
+    /// \brief Get the mass of the sensor
+    /// \return Current mass of the object
+    float getMass() const;
 
-            /// \brief Set the mass of the sensor
-            /// \param[in].m Mass to be set
-            void setMass(const float m);
+    /// \brief Set the mass of the sensor
+    /// \param[in].m Mass to be set
+    void setMass(const float m);
 
-            /// \brief Get the handle to mass respondable object
-            /// \return Handle to mass respondable object
-            simInt getMassHandle() const;
+    /// \brief Get the handle to mass respondable object
+    /// \return Handle to mass respondable object
+    simInt getMassHandle() const;
 
-            /// \brief Set the handle to mass respondable object
-            /// \param[in].hm Handle of mass to be set
-            void setMassHandle(const simInt& hm);
+    /// \brief Set the handle to mass respondable object
+    /// \param[in].hm Handle of mass to be set
+    void setMassHandle(const simInt& hm);
 
-            /// \brief Get the handle to force sensor
-            /// \return Handle to force sensor
-            simInt getForceHandle() const;
+    /// \brief Get the handle to force sensor
+    /// \return Handle to force sensor
+    simInt getForceHandle() const;
 
-            /// \brief Set the handle to force sensor
-            /// \param[in].hf Handle of force sensor to be set
-            void setForceHandle(const simInt& hf);
+    /// \brief Set the handle to force sensor
+    /// \param[in].hf Handle of force sensor to be set
+    void setForceHandle(const simInt& hf);
 
-            /// \brief Update the sensor
-            void updateSensor();
+    /// \brief Update the sensor
+    void updateSensor();
 
-            /// \brief Update sensor and send the commands to NAOqi
-            void updateSensor(Sim::HALInterface* &hal);
+    /// \brief Update sensor and send the commands to NAOqi
+    void updateSensor(Sim::HALInterface* &hal);
 
-    };
+};
 
-    class CameraSensor : public Sensor{
-        public:
-            /// \brief Empty constructor
-            CameraSensor() : Sensor() {}
+class CameraSensor : public Sensor{
+public:
+    /// \brief Empty constructor
+    CameraSensor() : Sensor() {}
 
-            /// \brief Constructor specifying the name of the handle to be searched into Vrep world
-            /// \param[in].&name Name to bea searched into Vrep world
-            CameraSensor(const std::string& name);
+    /// \brief Constructor specifying the name of the handle to be searched into Vrep world
+    /// \param[in].&name Name to bea searched into Vrep world
+    CameraSensor(const std::string& name);
 
-            /// \brief Constructor specifying the name of the handle to be searched into Vrep world
-            /// \param[in].&name Name to bea searched into Vrep world
-            CameraSensor(const std::string& name, simInt handle, const Sim::CameraSensor* simSDKInSensPt = NULL);
+    /// \brief Constructor specifying the name of the handle to be searched into Vrep world
+    /// \param[in].&name Name to bea searched into Vrep world
+    CameraSensor(const std::string& name, simInt handle, const Sim::CameraSensor* simSDKInSensPt = NULL);
 
-            /// \brief Update the sensor
-            void updateSensor();
+    /// \brief Update the sensor
+    void updateSensor();
 
-            /// \brief Update sensor and send the commands to NAOqi
-            void updateSensor(Sim::HALInterface* &hal);
+    /// \brief Update sensor and send the commands to NAOqi
+    void updateSensor(Sim::HALInterface* &hal);
 
-            /// \brief Visualizer for OpenCV
-            void openCVVisualizer();
+    /// \brief Visualizer for OpenCV
+    void openCVVisualizer();
 
-            /// \brief Disable the camera
-            void disableCamera();
+    /// \brief Disable the camera
+    void disableCamera();
 
-            /// \brief Active the camera
-            void activeCamera();
+    /// \brief Active the camera
+    void activeCamera();
 
-            /// \brief Send the resolution to the proxy
-            void sendResolution(AL::ALVideoDeviceProxy* &cameraProxy);
+    /// \brief Send the resolution to the proxy
+    void sendResolution(AL::ALVideoDeviceProxy* &cameraProxy);
 
-            /// \brief Camera proxy
-//            AL::ALVideoDeviceProxy* cameraProxy;
+    /// \brief Camera proxy
+    //            AL::ALVideoDeviceProxy* cameraProxy;
 
-        private:
-             /// \brief Pointer to simulatorSDK camera sensor
-             const Sim::CameraSensor* simSDKPt;
-             /// \brief Pointer to the image expressed as char [0, 255]
-             unsigned char* img;
-             /// \brief Pointer to the image expressed as float [0 1]
-             simFloat* imgTmp;
-             /// \brief Width and height of the camera
-             int widthHeight[2];
-             /// \brief Total dimension of the image: width x height x 3 (RGB channels)
-             int totDim;
+private:
+    /// \brief Pointer to simulatorSDK camera sensor
+    const Sim::CameraSensor* simSDKPt;
+    /// \brief Pointer to the image expressed as char [0, 255]
+    unsigned char* img;
+    /// \brief Pointer to the image expressed as float [0 1]
+    simFloat* imgTmp;
+    /// \brief Width and height of the camera
+    int widthHeight[2];
+    /// \brief Total dimension of the image: width x height x 3 (RGB channels)
+    int totDim;
 
-    };
+};
 
-    class FSRSensor : public Sensor{
-        public:
-            /// \brief Pointer to simulatorSDK camera sensor
-            const Sim::FSRSensor* simSDKPt;
+class FSRSensor : public Sensor{
+public:
+    /// \brief Pointer to simulatorSDK camera sensor
+    const Sim::FSRSensor* simSDKPt;
 
-            /// \brief Mass from the sensor
-            float mass;
+    /// \brief Mass from the sensor
+    float mass;
 
-            /// \brief Value of the gravity vector
-            float gravity;
+    /// \brief Value of the gravity vector
+    float gravity;
 
-            /// \brief Value read by the sensor along z-axis
-            float forceZ;
+    /// \brief Value read by the sensor along z-axis
+    float forceZ;
 
-            /// \brief Mass 'feel' along z-axis
-            float massZ;
+    /// \brief Mass 'feel' along z-axis
+    float massZ;
 
-            /// \brief Total mass of the robot
-            float massTot;
+    /// \brief Total mass of the robot
+    float massTot;
 
-        public:
-            /// \brief Empty constructor
-            FSRSensor() : Sensor() {}
+public:
+    /// \brief Empty constructor
+    FSRSensor() : Sensor() {}
 
-            /// \brief Constructor specifying the name of the handle to be searched into Vrep world
-            /// \param[in].&name Name to bea searched into Vrep world
-            FSRSensor(const std::string& name);
+    /// \brief Constructor specifying the name of the handle to be searched into Vrep world
+    /// \param[in].&name Name to bea searched into Vrep world
+    FSRSensor(const std::string& name);
 
-            /// \brief Constructor specifying the name of the handle to be searched into Vrep world
-            /// \param[in].&name Name to bea searched into Vrep world
-            FSRSensor(const std::string& name, simInt handle, const Sim::FSRSensor* simSDKInSensPt = NULL);
+    /// \brief Constructor specifying the name of the handle to be searched into Vrep world
+    /// \param[in].&name Name to bea searched into Vrep world
+    FSRSensor(const std::string& name, simInt handle, const Sim::FSRSensor* simSDKInSensPt = NULL);
 
-            /// \brief Update the sensor
-            void updateSensor();
+    /// \brief Update the sensor
+    void updateSensor();
 
-            /// \brief Update sensor and send the commands to NAOqi
-            void updateSensor(Sim::HALInterface* &hal);
-    };
+    /// \brief Update sensor and send the commands to NAOqi
+    void updateSensor(Sim::HALInterface* &hal);
+};
 
 }
 
