@@ -307,7 +307,11 @@ CameraSensor::CameraSensor(const std::string &name, simInt handle, const Sim::Ca
   simSDKPt = simSDKInSensPt;
 
   // Get the width and height of the image
-  simGetVisionSensorResolution(sensorHandle,widthHeight);
+  int test = simGetVisionSensorResolution(sensorHandle,widthHeight);
+
+  std::cout << "Width and height of the image : " << test << std::endl;
+  std::cout << "Width of the image : " << widthHeight[0] << std::endl;
+  std::cout << "Height of the image : " << widthHeight[1] << std::endl;
 
   // Total dimension of the image seen by the robot (the last 3 is for RGB channel)
   totDim = widthHeight[0] * widthHeight[1] * 3;
@@ -362,9 +366,9 @@ void CameraSensor::updateSensor(Sim::HALInterface* &hal){
 
     for(int i=0;i<totDim;i=i+3){
       // Invert and convert the image from [0,1] range to [0, 255] RGB scale
-      img[totDim-i-3]  = imgTmp[i]*255;
-      img[totDim-i-2]  = imgTmp[i+1]*255;
-      img[totDim-i-1]  = imgTmp[i+2]*255;
+      img[i]  = imgTmp[i]*255;
+      img[i+1]  = imgTmp[i+1]*255;
+      img[i+2]  = imgTmp[i+2]*255;
 
       // From OpenCV transformation
       //            img[i]   = imgTmp[i]*255;

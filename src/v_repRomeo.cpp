@@ -1,5 +1,6 @@
 #include "v_repRomeo.h"
 #include "boost/bind.hpp"
+
 #include <alcommon/almodule.h>
 #include <alcommon/albroker.h>
 #include <alcommon/albrokermanager.h>
@@ -13,7 +14,7 @@ namespace v_repRomeo{
 #define RHIPYAWPITCHJOINT "RHipYawPitch"
 #define LHIPYAWPITCHJOINT "LHipYawPitch"
 #define LSHOULDERPITCHJOINT "LShoulderPitch"
-#define PATH_TO_SEARCH "Joint"
+#define PATH_TO_SEARCH "Hand"
 #define IMU_ROOT "IMU"
 #define UI_NAME "ROMEO_UI"
 #define UI_HANDS 4         // GUI handle that enables/disables the hands
@@ -84,9 +85,9 @@ void v_repRomeoRobot::findVrepTree(int &objHandle, std::vector<std::string> &nam
     toExplore.pop_back();
     int index=0;
     int childHandle=simGetObjectChild(objHandle,index++);
-    // std::cout << "childHandle: " << childHandle << std::endl;
+    //std::cout << "childHandle: " << childHandle << std::endl;
     if(childHandle!=-1){
-      // std::cout << "nameUp: " << simGetObjectName(childHandle) << std::endl;
+      //std::cout << "nameUp: " << simGetObjectName(childHandle) << std::endl;
       names.push_back(simGetObjectName(childHandle));
       handleNames.push_back(childHandle);
     }
@@ -94,12 +95,14 @@ void v_repRomeoRobot::findVrepTree(int &objHandle, std::vector<std::string> &nam
       toExplore.push_back(childHandle);
       childHandle=simGetObjectChild(objHandle,index++);
       if(childHandle!=-1){
-        //   std::cout << "nameDw: " << simGetObjectName(childHandle) << std::endl;
+        //std::cout << "nameDw: " << simGetObjectName(childHandle) << std::endl;
         names.push_back(simGetObjectName(childHandle));
         handleNames.push_back(childHandle);
       }
     }
   }
+  int size = handleNames.size();
+  std::cout << "taille = " << size << std::endl;
 }
 
 void v_repRomeoRobot::initThreads(){
@@ -117,7 +120,7 @@ void v_repRomeoRobot::initThreads(){
   ////// Thread option //////////////////////////
   ///////////////////////////////////////////////
   t2 = new boost::thread(boost::bind(&v_repRomeoRobot::launchExHAL,this,pathToExHAL));
-  sleep(2.5);
+  //sleep(2.5);
   t1 = new boost::thread(&v_repRomeoRobot::launchExHAL,this,pathToEx);
 
   ///////////////////////////////////////////////
@@ -150,19 +153,33 @@ void v_repRomeoRobot::getVrepStruct(std::vector<std::string>& namesVrep, std::ve
 }
 
 void v_repRomeoRobot::getAldebStruct(){
-  // Take the structure of the robot from NAO libraries
+  // Take the structure of the robot from ROMEO libraries
   angleActuators = model->angleActuators();
+  coupledActuators = model->coupledActuators();  ///MOD BENOIT
   //std::cout << "angleActnr: " << angleActuators.size() << std::endl;
   int i = 1;//MODMARCO
-  for(std::vector<const Sim::AngleActuator*>::const_iterator it =
-      angleActuators.begin() ; it != angleActuators.end() ;++ it){
+  for(std::vector<const Sim::AngleActuator*>::const_iterator it = angleActuators.begin() ; it != angleActuators.end() ;++ it){
     std::cout<<i<<". setActuatorValue YO: " << (*it)->name() << ": " << (*it)->startValue()*180/M_PI << std::endl;
     float actuatorPosition = hal->fetchAngleActuatorValue(*it);
     // Get the current structure
     const Sim::AngleSensor* angleSensor = model->angleSensor((*it)->name());
+    hal->sendAngleSensorValue(angleSensor, actuatorPosition);
     //std::cout << "setSensorValue : " << angleSensor->name() << " to " << actuatorPosition << std::endl;
     i++; //MODMARCO
   }
+
+  //// MODBENOIT///
+  i=1;
+  for(std::vector<const Sim::CoupledActuator*>::const_iterator it = coupledActuators.begin() ; it != coupledActuators.end() ;++ it){
+    std::cout<<i<<". setcoupledActuatorValue YO: " << (*it)->name() << ": " << (*it)->startValue()*180/M_PI << std::endl;
+    float coupledActPosition = hal->fetchCoupledActuatorValue(*it);
+    // Get the current structure
+    const Sim::CoupledSensor* coupledSensor = model->coupledSensor((*it)->name());
+    hal->sendCoupledSensorValue(coupledSensor, coupledActPosition);
+    std::cout << "setSensorValue : " << coupledSensor->name() << " to " << coupledActPosition << std::endl;
+    i++;
+  }
+  //// MODBENOIT
 }
 
 void v_repRomeoRobot::findAldebVrepCorr(std::vector<std::string>&namesVrep, std::vector<simInt>&handlesVrep){
@@ -206,6 +223,27 @@ void v_repRomeoRobot::findAldebVrepCorr(std::vector<std::string>&namesVrep, std:
       //std::cout << "WARNING: " << (*it)->name() << " not found!" << std::endl;
     }
   }
+
+  ////MOD BENOIT
+  std::vector<const Sim::CoupledActuator*>::const_iterator itt;
+  // Find the corrispondences for the hands
+  std::cout << "Finding corrispondences for the hands" << std::endl;
+  for(itt = coupledActuators.begin() ; itt != coupledActuators.end() ;++ itt){
+    foundCorr = false;
+    std::cout<<"CoupledActuator n° "<<j<<": "<<(*itt)->name()<<std::endl;//MODMARCO
+    j++;//MODMARCO
+    for(i=0;i<size;++i){
+      if (std::string::npos != namesVrep[i].find((*itt)->name())){
+        k++;
+        jointsVrep.push_back(handlesVrep[i]);
+        foundCorr = true;
+        std::cout<<"JointsCoupledVrep n° "<<k<<": "<<jointsVrep[k]<<std::endl<<std::endl;
+        break;
+      }
+    }
+  }
+  ////MOD BENOIT ////
+
   //EDIT BY ME
   //it = angleActuators.begin();
   std::cout<<"STAMPA MIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"<<std::endl<<"vector jointsVrep:"<<std::endl;
@@ -234,7 +272,7 @@ void v_repRomeoRobot::initVariables(){
 
 void v_repRomeoRobot::initSensors(){
   //initInertialSensors();
-  //initCameraSensors();
+  initCameraSensors();
   //initFSRSensors();
 }
 
@@ -262,74 +300,89 @@ void v_repRomeoRobot::initCameraSensors(){
   camerasStatus = 2;
 
   // With two separate cameras
-  cameraTop     = NULL;
-  cameraBottom  = NULL;
+  cameraLeft = NULL;
+  cameraRight = NULL;
+  cameraLeftEye = NULL;
+  cameraRightEye  = NULL;
 
   // If the 8-th bin is set to 0, then activate the camera
   out = isNthBitSet(out,8);
-  if(out==0){
+  std::cout << "CAMERA out = " << out << std::endl;  //MODBENOIT
+  //  if(out==0){    ///MOD BENOIT
 
-    // Get the button that selects which camera is running
-    out2 = simGetUIButtonProperty(UIHandle,UI_CAM_TOP_BOT);
-    // If the button is up (0) the top camera has to be activated
-    out2 = isNthBitSet(out2,8);
-    if(out2==1)
-      bit = 1;
-    else
-      bit = 0;
+  //    // Get the button that selects which camera is running
+  //    out2 = simGetUIButtonProperty(UIHandle,UI_CAM_TOP_BOT);
+  //    // If the button is up (0) the top camera has to be activated
+  //    out2 = isNthBitSet(out2,8);
+  //    if(out2==1)
+  //      bit = 1;
+  //    else
+  //      bit = 0;
 
-    // Init the camera(s)
-    // CAMERA SENSORS
-    std::vector<const Sim::CameraSensor*> cameraSensors = model->cameraSensors();
+  // Init the camera(s)
+  // CAMERA SENSORS
+  std::vector<const Sim::CameraSensor*> cameraSensors = model->cameraSensors();
 
-    int size = cameraSensors.size();
-    //std::cout << "CameraSize: " << cameraSensors.size() << std::endl;
-    v_repRomeoSensors::CameraSensor* camSr;
+  int size = cameraSensors.size();
+  std::cout << "CameraSize: " << cameraSensors.size() << std::endl;
+  v_repRomeoSensors::CameraSensor* camSr;
 
-    camerasStatus     = computeCameraStatus(out,out2);
-    cameraNAOqiStatus = cameraProxy->getActiveCamera();
+  //MOD BENOIT      camerasStatus     = computeCameraStatus(out,out2);
+  /*MOD BENOIT*/camerasStatus = 0;
+  cameraNAOqiStatus = cameraProxy->getActiveCamera();
 
-    // i TO BE INITIALIZED TO 0!
-    for(int i=0;i<size;++i){
-      //                if(i==0 && bit == 1 || i==1 && bit == 0){
-      camSr = new v_repRomeoSensors::CameraSensor(cameraSensors[i]->name(), vrepId, cameraSensors[i]);
-      //std::cout << "cameraSensorHandle: " << camSr->sensorHandle << std::endl;
+  std::cout << "******CameraStatus: " << camerasStatus << std::endl;
+  std::cout << "******NAOqiStatus: " << cameraNAOqiStatus << std::endl;
 
-      if(camSr->sensorHandle != -1){
-        // With vector
-        //                        cameraSensorsVrep.push_back(camSr);
-        // With two separate cameras
-        camSr->sendResolution(cameraProxy);
-        if(i == 0){
-          cameraBottom = camSr;
-        }else if(i == 1){
-          cameraTop    = camSr;
-        }
+  // i TO BE INITIALIZED TO 0!
+  for(int i=0;i<size;++i){
+    //                if(i==0 && bit == 1 || i==1 && bit == 0){
+    camSr = new v_repRomeoSensors::CameraSensor(cameraSensors[i]->name(), vrepId, cameraSensors[i]);
+    std::cout << "cameraSensorHandle: " << camSr->sensorHandle << std::endl;
+
+    if(camSr->sensorHandle != -1){
+      // With vector
+      //                        cameraSensorsVrep.push_back(camSr);
+      // With four separate cameras
+      camSr->sendResolution(cameraProxy);
+      if(i == 0){
+        cameraLeft = camSr;
+      }else if(i == 1){
+        cameraLeftEye = camSr;
+      }else if(i == 2){
+        cameraRight = camSr;
+      }else if(i == 3){
+        cameraRightEye = camSr;
       }
-      //                }
     }
-    //            std::cout << "cameraStatus " << camerasStatus << std::endl;
-  }else{
+    //                }
+  }
+  //            std::cout << "cameraStatus " << camerasStatus << std::endl;
+  /* }else{    MOD BENOIT
     camerasStatus     = 2;
     cameraNAOqiStatus = cameraProxy->getActiveCamera();
-  }
+  } */
 
   // Initialize the camera from NAOqi side
   if(camerasStatus == 0){
-    cameraProxy->setActiveCamera(0);
-    cameraTop->activeCamera();
-    cameraTop->sendResolution(cameraProxy);
-    cameraBottom->disableCamera();
-  }else if(camerasStatus == 1){
     cameraProxy->setActiveCamera(1);
+    cameraLeftEye->activeCamera();
+    cameraLeftEye->sendResolution(cameraProxy);
+    cameraLeft->disableCamera();
+    cameraRight->disableCamera();
+    cameraRightEye->disableCamera();
+  }else if(camerasStatus == 1){
+    cameraProxy->setActiveCamera(0);
     cameraBottom->activeCamera();
     cameraBottom->sendResolution(cameraProxy);
     cameraTop->disableCamera();
   }
+  cameraNAOqiStatus = cameraProxy->getActiveCamera(); //MOD Benoit
 
   std::cout << "InitCameraStatus: " << camerasStatus << std::endl;
   std::cout << "InitNAOqiStatus: " << cameraNAOqiStatus << std::endl;
 }
+
 
 void v_repRomeoRobot::initFSRSensors(){
   simInt out = simGetUIButtonProperty(UIHandle,UI_FSR);
@@ -365,31 +418,33 @@ void v_repRomeoRobot::initHands(){
   simInt out = simGetUIButtonProperty(UIHandle,UI_HANDS);
 
   // If the 8-th bin is set to 0, then activate the hands
-  if(isNthBitSet(out,8)==0){
-    // HANDS
-    int leftWristHandle  = jointsVrep[6];
-    int rightWristHandle = jointsVrep[11];
-    std::vector<const Sim::CoupledActuator*> ca = model->coupledActuators();
+  //if(isNthBitSet(out,8)==0){
+  // HANDS
+  int leftWristHandle  = jointsVrep[10];
+  int rightWristHandle = jointsVrep[17];
+  std::vector<const Sim::CoupledActuator*> ca = model->coupledActuators();
 
-    // Create hand structure
-    int size = ca.size();
-    for(int i=0;i<size;++i){
-      // Left hand
-      if(i==0){
-        v_repRomeoLeftHand = new v_repRomeo::v_repRomeoHand(ca[i], model->coupledSensor(ca[i]->name()),leftWristHandle);
-        v_repRomeoLeftHand->activeHand();
-      }else{
-        v_repRomeoRightHand = new v_repRomeo::v_repRomeoHand(ca[i], model->coupledSensor(ca[i]->name()),rightWristHandle);
-        v_repRomeoRightHand->activeHand();
-      }
+  int i=0;
+  // Create hand structure
+  int size = ca.size();
+  for(std::vector<const Sim::CoupledActuator*>::const_iterator it = ca.begin(); it != ca.end(); ++it){
+    // Left hand
+    if(i==0){
+      v_repRomeoLeftHand = new v_repRomeo::v_repRomeoHand(ca[i], model->coupledSensor(ca[i]->name()),leftWristHandle);
+      v_repRomeoLeftHand->activeHand();
+    }else{
+      v_repRomeoRightHand = new v_repRomeo::v_repRomeoHand(ca[i], model->coupledSensor(ca[i]->name()),rightWristHandle);
+      v_repRomeoRightHand->activeHand();
     }
+    i++;
   }
+  //}
 }
 
 void v_repRomeoRobot::initProxy(){
   // Here the sleep is needed since it NAOqi has to load first the ALVideoDevice module
-  //        sleep(2);
-  //    cameraProxy = new AL::ALVideoDeviceProxy("127.0.0.1");
+  sleep(2);
+  cameraProxy = new AL::ALVideoDeviceProxy("127.0.0.1");
   // If I set this I have problems with the resolution
   // cameraProxyName = cameraProxy->subscribe("camera",AL::kQQVGA,AL::kRgbColorSpace,30);
   //std::cout << "cameraProxyName: " << cameraProxyName.c_str() << std::endl;
@@ -399,6 +454,7 @@ void v_repRomeoRobot::initPose(){
   std::cout<<"ENTER INITPOSE"<<std::endl;
   // Set initial values for the joints
   int angleActSize = angleActuators.size();
+  int h=0;
   std::cout<<"angleActSize: "<<angleActSize<<std::endl;
   for(int i = 0;i<angleActSize;++i){
     if(jointsVrep[i]!=-1 && !isnan(angleActuators[i]->startValue())){
@@ -415,7 +471,24 @@ void v_repRomeoRobot::initPose(){
       const Sim::AngleSensor* angleSensor = model->angleSensor(angleActuators[i]->name());
       hal->sendAngleSensorValue(angleSensor, lastValidlHipYawPitchCommand);
     }
+    ++h;
   }
+
+  ////MOD BENOIT
+  // Set initial values for the coupledActuators
+  int coupledActSize = coupledActuators.size();
+  std::cout<<"CoupledActSize: "<<coupledActSize<< " and h =  " << h<<std::endl;
+  for(int i = 0;i<coupledActSize;++i){
+    if(jointsVrep[h]!=-1 && !isnan(coupledActuators[i]->startValue())){
+      simSetJointTargetPosition(jointsVrep[h],coupledActuators[i]->startValue()); //MODMARCO
+      std::cout << "setting: " << simGetObjectName(jointsVrep[h]) << " to: " << coupledActuators[i]->startValue()*180/M_PI << std::endl;
+      const Sim::CoupledSensor* coupledSensor = model->coupledSensor(coupledActuators[i]->name());
+      hal->sendCoupledSensorValue(coupledSensor, coupledActuators[i]->startValue());
+    }
+    h++;
+  }
+  ////MOD BENOIT
+
 }
 
 
@@ -435,13 +508,13 @@ int v_repRomeoRobot::computeCameraStatus(int &a, int &b) const{
 
 void v_repRomeoRobot::update(){
   updatePose();
-  //updateSensors();
+  updateSensors();
   //updateHands();
 }
 
 void v_repRomeoRobot::updateSensors(){
-  updateInertialSensors();
-  //updateCameraSensors();
+  //updateInertialSensors();
+  updateCameraSensors();
   //updateFSRSensors();
 }
 
@@ -492,7 +565,7 @@ void v_repRomeoRobot::updateInertialSensors(){
 
 void v_repRomeoRobot::updateCameraSensors(){
 
-  simInt out = simGetUIButtonProperty(UIHandle,UI_CAM_ON);
+  /* MOD BENOIT  simInt out = simGetUIButtonProperty(UIHandle,UI_CAM_ON);
   out = isNthBitSet(out,8);
 
   // Get the button that selects which camera is running
@@ -502,11 +575,12 @@ void v_repRomeoRobot::updateCameraSensors(){
 
   // Compute the status based on the interface buttons
   out = computeCameraStatus(out,out2);
-
+*/
   // Check which camera is selected
-  out2 = cameraProxy->getActiveCamera();
+  simInt out2 = cameraProxy->getActiveCamera();
+  simInt out=0, out3;
 
-  std::cout << "cameraStatusBefore: " << camerasStatus << " intStatus: " << out << " NAOqiStatus: " << out2 << std::endl;
+  std::cout << "cameraStatusBefore: " << camerasStatus << " intStatus: " << out << " NAOqiStatus: " << out2 << " Camera Proxy = " << cameraNAOqiStatus << std::endl;
   //        std::cout << "cameraResolution: " << cameraProxy->getResolution(cameraProxyName) << std::endl;
 
   if(camerasStatus == out && cameraNAOqiStatus == out2){
@@ -521,15 +595,19 @@ void v_repRomeoRobot::updateCameraSensors(){
     //                (*Camit)->updateSensor(hal);
     //            }
 
-    std::cout << "cameraTop->sensorEnable: " << cameraTop->sensorEnable << std::endl;
-    std::cout << "cameraBottom->sensorEnable: " << cameraBottom->sensorEnable << std::endl;
+    std::cout << "cameraLeftEye->sensorEnable: " << cameraLeftEye->sensorEnable << std::endl;
+    std::cout << "cameraRightEye->sensorEnable: " << cameraRightEye->sensorEnable << std::endl;
 
     // With two separate cameras
-    if(cameraTop->sensorEnable){
+    if(cameraLeftEye->sensorEnable){
       std::cout << "sending data continuous: " << cameraNAOqiStatus << std::endl;
-      cameraTop->updateSensor(hal);
-    }else if(cameraBottom->sensorEnable){
-      cameraBottom->updateSensor(hal);
+      cameraLeftEye->updateSensor(hal);
+    }else if(cameraRightEye->sensorEnable){
+      cameraRightEye->updateSensor(hal);
+    }else if(cameraRight->sensorEnable){
+      cameraRight->updateSensor(hal);
+    }else if(cameraLeft->sensorEnable){
+      cameraLeft->updateSensor(hal);
     }
   }else if(camerasStatus != out){
     // If here, it means that the status is changed due to the interface
@@ -556,12 +634,13 @@ void v_repRomeoRobot::updateCameraSensors(){
       //                if(cameraBottom!=NULL)
       //                    cameraBottom->disableCamera();
 
-      cameraProxy->setActiveCamera(0);
-      cameraTop->activeCamera();
-      cameraTop->sendResolution(cameraProxy);
+      cameraProxy->setActiveCamera(1);   ///MOD BENOIT
+      cameraLeftEye->activeCamera();
+      cameraLeftEye->sendResolution(cameraProxy);
       //                cameraTop->updateSensor(hal);
-      cameraBottom->disableCamera();
-
+      cameraRightEye->disableCamera();
+      cameraRight->disableCamera();
+      cameraLeft->disableCamera();
 
     }else if(camerasStatus == 1){
       // Activate camera bottom
@@ -581,17 +660,19 @@ void v_repRomeoRobot::updateCameraSensors(){
       //                if(cameraTop!=NULL)
       //                    cameraTop->disableCamera();
 
-      cameraProxy->setActiveCamera(1);
-      cameraBottom->activeCamera();
-      cameraBottom->sendResolution(cameraProxy);
+      cameraProxy->setActiveCamera(0);
+      cameraRightEye->activeCamera();
+      cameraRightEye->sendResolution(cameraProxy);
       //                cameraBottom->updateSensor(hal);
-      cameraTop->disableCamera();
+      cameraLeftEye->disableCamera();
+      cameraLeft->disableCamera();
+      cameraRight->disableCamera();
     }else{
       // The cameras have to be disabled
-      //                if(cameraBottom!=NULL)
-      cameraBottom->disableCamera();
-      //                if(cameraTop!=NULL)
-      cameraTop->disableCamera();
+      cameraRight->disableCamera();
+      cameraLeft->disableCamera();
+      cameraLeftEye->disableCamera();
+      cameraRightEye->disableCamera();
     }
   }else{
     // NAOqi has switched camera
@@ -702,14 +783,15 @@ v_repRomeoRobot::v_repRomeoRobot(int objHandle){
   // Find the correspondences between them
   findAldebVrepCorr(namesVrep, handlesVrep);
 
-  // Set the initial pose of the robot
-  initPose();
-
   // Get the UI handle
-  //UIHandle = simGetUIHandle(UI_NAME);
+  UIHandle = simGetUIHandle(UI_NAME);
 
   // Init the hands
-  //initHands();
+  initHands();
+
+  ///Benoit put this here instead of before the UIHandle.////
+  // Set the initial pose of the robot
+  initPose();
 }
 
 void v_repRomeoRobot::findCorrespondences(){
@@ -718,7 +800,7 @@ void v_repRomeoRobot::findCorrespondences(){
   initProxy();
 
   // Init the sensors
-  //initSensors();
+  initSensors();
 
 }
 
@@ -866,8 +948,9 @@ void v_repRomeoHand::activeHand(){
   int size = jointHandle.size();
   std::cout << "jointHandleSize: " << jointHandle.size() << std::endl;
   for(int i=0;i<size;++i){
-    std::cout << "jointHandName: " << simGetObjectName(jointHandle[i]) << " name: " << jointHandle[i] << std::endl;
-    simSetModelProperty(jointHandle[i],0);
+    std::cout << "jointHandName: " << simGetObjectName(jointHandle[i]) << " number : " << jointHandle[i] << std::endl;
+    //simSetModelProperty(jointHandle[i],0);
+    simSetJointMode(jointHandle[i],sim_jointmode_motion_deprecated,1);
   }
   enableHand = true;
 }

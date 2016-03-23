@@ -121,6 +121,8 @@ private:
     int vrepId;
     /// \brief It stores the list of the joint actuators
     std::vector<const Sim::AngleActuator*> angleActuators;
+    /// \brief It stores the list of the coupled actuators
+    std::vector<const Sim::CoupledActuator*> coupledActuators;
     /// \brief Camera proxy to access the camera
     AL::ALVideoDeviceProxy *cameraProxy;
     std::string cameraProxyName;
@@ -269,6 +271,15 @@ public:
 
     /// \brief Pointer to the bottom camera
     v_repRomeoSensors::CameraSensor* cameraBottom;
+
+    /// \brief Pointer to the left camera on the forehead
+    v_repRomeoSensors::CameraSensor* cameraLeft;
+    /// \brief Pointer to the right camera on the forehead
+    v_repRomeoSensors::CameraSensor* cameraRight;
+    /// \brief Pointer to the left eye camera
+    v_repRomeoSensors::CameraSensor* cameraLeftEye;
+    /// \brief Pointer to the right eye camera
+    v_repRomeoSensors::CameraSensor* cameraRightEye;
 
     /// \brief Vector of the FSR sensors with the same order as Aldebaran libraries
     std::vector<v_repRomeoSensors::FSRSensor*> FSRSensorsVrep;
