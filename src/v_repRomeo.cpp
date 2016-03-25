@@ -595,8 +595,8 @@ void v_repRomeoRobot::updateCameraSensors(){
     //                (*Camit)->updateSensor(hal);
     //            }
 
-    std::cout << "cameraLeftEye->sensorEnable: " << cameraLeftEye->sensorEnable << std::endl;
-    std::cout << "cameraRightEye->sensorEnable: " << cameraRightEye->sensorEnable << std::endl;
+    //std::cout << "cameraLeftEye->sensorEnable: " << cameraLeftEye->sensorEnable << std::endl;
+    //std::cout << "cameraRightEye->sensorEnable: " << cameraRightEye->sensorEnable << std::endl;
 
     // With two separate cameras
     if(cameraLeftEye->sensorEnable){
@@ -634,13 +634,13 @@ void v_repRomeoRobot::updateCameraSensors(){
       //                if(cameraBottom!=NULL)
       //                    cameraBottom->disableCamera();
 
-      cameraProxy->setActiveCamera(1);   ///MOD BENOIT
-      cameraLeftEye->activeCamera();
+      //cameraProxy->setActiveCamera(1);   ///MOD BENOIT
+      //cameraLeftEye->activeCamera();
       cameraLeftEye->sendResolution(cameraProxy);
       //                cameraTop->updateSensor(hal);
-      cameraRightEye->disableCamera();
-      cameraRight->disableCamera();
-      cameraLeft->disableCamera();
+      //cameraRightEye->disableCamera();
+      //cameraRight->disableCamera();
+      //cameraLeft->disableCamera();
 
     }else if(camerasStatus == 1){
       // Activate camera bottom

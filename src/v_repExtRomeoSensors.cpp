@@ -362,7 +362,9 @@ void CameraSensor::updateSensor(){
 
 void CameraSensor::updateSensor(Sim::HALInterface* &hal){
   if(sensorEnable){
-    updateSensor();
+    //updateSensor();
+    imgTmp = simGetVisionSensorImage(sensorHandle);
+
 
     for(int i=0;i<totDim;i=i+3){
       // Invert and convert the image from [0,1] range to [0, 255] RGB scale
@@ -392,8 +394,8 @@ void CameraSensor::updateSensor(Sim::HALInterface* &hal){
 
     //        openCVVisualizer();
 
-    std::cout << "Expected camera size: " << hal->cameraBufferSize(simSDKPt) << std::endl;
-
+    //std::cout << "Expected camera size: " << hal->cameraBufferSize(simSDKPt) << std::endl;
+    simReleaseBuffer((char*)imgTmp);
     hal->sendCameraSensorValue(simSDKPt,img);
   }
 }
